@@ -44,6 +44,7 @@ def load(checkpoint_name, model, optimiser):
     if os.path.exists(checkpoint_name):
         checkpoint = torch.load(checkpoint_name, map_location=torch.device('cpu'))
         model.load_state_dict(checkpoint['model_state_dict'])
+        model.cuda()
         optimiser.load_state_dict(checkpoint['optimiser_state_dict'])
         grad_step = checkpoint['grad_step']
         #print(f'Restored checkpoint from {checkpoint_name}.')
@@ -125,20 +126,20 @@ def eval_test(backcast_length, forecast_length, net, norm_constant, test_losses,
 
 def evaluate_training(backcast_length, forecast_length, net, norm_constant, test_losses, x_test, y_test, the_lowest_error, device, plot_eval=False, class_dir="", step=0):
     net.eval()
-    _, forecast = net(torch.tensor(x_test, dtype=torch.float))
+    _, forecast = net(x_test.clone().detach())
     
-    if device.type == 'cuda':
-        singular_loss = F.mse_loss(forecast, torch.tensor(y_test, dtype=torch.float)).item()
+    if device.type == 'cuda:1':
+        singular_loss = F.mse_loss(forecast, y_test.clone().detach()).item()
     else :
-        singular_loss = F.mse_loss(forecast, torch.tensor(y_test, dtype=torch.float).to(device)).item()
+        singular_loss = F.mse_loss(forecast, y_test.clone().detach()).item()
         
     test_losses.append(singular_loss)
     if singular_loss < the_lowest_error[-1]:
-            the_lowest_error.append(singular_loss)            
-    p = forecast.detach().cpu().numpy()
-   
+            the_lowest_error.append(singular_loss)           
+           
     
     if plot_eval:
+        p = forecast.detach().cpu().numpy()
         subplots = [221, 222, 223, 224]
         plt.figure(1, figsize=(12, 10))
         for plot_id, i in enumerate(np.random.choice(range(len(x_test)), size=4, replace=False)):
@@ -157,24 +158,21 @@ def evaluate_training(backcast_length, forecast_length, net, norm_constant, test
     
 def train_full_grad_steps(data, device, net, optimiser, test_losses, training_checkpoint, size):
     global_step = load(training_checkpoint, net, optimiser)
-    print(f'AFTER LOaD --- {global_step}')
     local_step = 0
     for x_train_batch, y_train_batch in data:
         global_step += 1
         local_step += 1
         optimiser.zero_grad()
         net.train()
-        _, forecast = net(torch.tensor(x_train_batch, dtype=torch.float).to(device))
-        loss = F.mse_loss(forecast, torch.tensor(y_train_batch, dtype=torch.float).to(device))
+        _, forecast = net(x_train_batch.clone().detach())#.to(device))
+        loss = F.mse_loss(forecast, y_train_batch.clone().detach())#.to(device))
         loss.backward()
         optimiser.step()
         if global_step > 0 and global_step % 100 == 0:
-            print(global_step)
             with torch.no_grad():
                 save(training_checkpoint, net, optimiser, global_step)
                 return global_step
         if local_step > 0 and local_step % size == 0:
-            print(global_step)
             return global_step
     
     
@@ -182,17 +180,18 @@ def train_full_grad_steps(data, device, net, optimiser, test_losses, training_ch
 
 def get_avg_score(net, x_test, y_test, name):
     net.eval()
-    _, forecast = net(torch.tensor(x_test, dtype=torch.float))
-    singular_loss = F.mse_loss(forecast, torch.tensor(y_test, dtype=torch.float)).item()
-
+    _, forecast = net(x_test.clone().detach())
+    singular_loss = F.mse_loss(forecast, y_test.clone().detach()).item()
+    """
     if "LBBB" in name:
         singular_loss *= 1.3
     if "I-AVB" in name:
         singular_loss *= 1.2
+    """
     return singular_loss
 
 
-def one_file_training_data(data_dir, file, forecast_length, backcast_length, batch_size):
+def one_file_training_data(data_dir, file, forecast_length, backcast_length, batch_size, cuda):
     normal_signal_data = []
 
     x = wfdb.io.rdsamp(data_dir + file[:-4])
@@ -203,10 +202,12 @@ def one_file_training_data(data_dir, file, forecast_length, backcast_length, bat
 
     df = pandas.DataFrame({'data': normal_signal_data})
     df['z_score']=stats.zscore(df['data'])
+    """
     print("----------------------")
     print(df.info())
     print(df.describe())
     print("----------------------")
+    """
 
     norm_constant = np.max(normal_signal_data)
     #print(norm_constant)
@@ -217,8 +218,8 @@ def one_file_training_data(data_dir, file, forecast_length, backcast_length, bat
         x_train_batch.append(normal_signal_data[i - backcast_length:i])
         y.append(normal_signal_data[i:i + forecast_length])
 
-    x_train_batch = np.array(x_train_batch)  # [..., 0]
-    y = np.array(y)  # [..., 0]
+    x_train_batch = torch.tensor(x_train_batch, device=cuda, dtype=torch.float)  # [..., 0]
+    y = torch.tensor(y, device=cuda,  dtype=torch.float)  # [..., 0]
 
     if len(x_train_batch) > 7500:
         x_train_batch = x_train_batch[0:7500]
@@ -232,7 +233,7 @@ def one_file_training_data(data_dir, file, forecast_length, backcast_length, bat
     return data,x_train, y_train, x_test, y_test, norm_constant
 
 
-def organise_data(data, data_header, forecast_length, backcast_length, batch_size):
+def organise_data(data, data_header, forecast_length, backcast_length, batch_size , cuda):
     normal_signal_data = []
 
     normal_signal_data.append(data[3])
@@ -250,8 +251,8 @@ def organise_data(data, data_header, forecast_length, backcast_length, batch_siz
         x.append(normal_signal_data[i - backcast_length:i])
         y.append(normal_signal_data[i:i + forecast_length])
 
-    x = np.array(x)  # [..., 0]
-    y = np.array(y)  # [..., 0]
+    x = torch.tensor(x, device=cuda, dtype=torch.float)  # [..., 0]
+    y = torch.tensor(y, device=cuda, dtype=torch.float)  # [..., 0]
 
     if len(x) > 7500:
         x = x[0:7500]

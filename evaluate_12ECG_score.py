@@ -87,8 +87,7 @@ def evaluate_12ECG_score(label_directory, output_directory):
         single_recording_output = np.array(tmp_data[2].split(','),np.int)
         single_probabilities_output = np.array(tmp_data[3].split(','),np.float64)
 
-       # Check labels and output for errors.
-
+        # Check labels and output for errors.
         if not (len(classes_label) == len(classes_output)):
             raise Exception('Numbers of classes for a file must be the same.')
         
@@ -102,6 +101,10 @@ def evaluate_12ECG_score(label_directory, output_directory):
     labels=np.array(labels)
     output=np.array(output)
     output_probabilities=np.array(output_probabilities)
+    
+    y_true = labels
+    y_pred = output
+    y_pred_proba = output_probabilities
 
     num_classes = len(classes_label)
 
@@ -111,7 +114,7 @@ def evaluate_12ECG_score(label_directory, output_directory):
     # compute AUROC and AUPRC
     auroc,auprc = compute_auc(labels, output_probabilities,num_classes)
 
-    return auroc,auprc,accuracy,f_measure,Fbeta_measure,Gbeta_measure
+    return auroc,auprc,accuracy,f_measure,Fbeta_measure,Gbeta_measure, y_true, y_pred, y_pred_proba
 
 
 # Find unique number of classes

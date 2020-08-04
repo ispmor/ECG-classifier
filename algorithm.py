@@ -34,10 +34,11 @@ class Model:
             optimiser = optim.Adam(net.parameters())
 
             naf.load(checkpoint, net, optimiser)
+            net.to(self.device)
             self.nets[d] = net
 
     def predict(self, data, data_header):
-        x, y = naf.organise_data(data, data_header, self.forecast_length, self.backcast_length, self.batch_size)
+        x, y = naf.organise_data(data, data_header, self.forecast_length, self.backcast_length, self.batch_size, self.device)
         for c in self.classes:
             self.scores[c] = naf.get_avg_score(self.nets[c], x , y, c)
 

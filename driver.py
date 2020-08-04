@@ -54,11 +54,12 @@ def get_classes(input_directory,files):
 
 if __name__ == '__main__':
     # Parse arguments.
-    if len(sys.argv) != 3:
-        raise Exception('Include the input and output directories as arguments, e.g., python driver.py input output.')
+    if len(sys.argv) < 3:
+        raise Exception('Include the input and output directories as arguments, then provide path to models(optional), e.g., python driver.py input output <models>.')
 
     input_directory = sys.argv[1]
     output_directory = sys.argv[2]
+    model_path = sys.argv[3] if len(sys.argv) > 3 else ""
 
     # Find files.
     input_files = []
@@ -69,12 +70,12 @@ if __name__ == '__main__':
     if not os.path.isdir(output_directory):
         os.mkdir(output_directory)
 
-    classes=get_classes(input_directory,input_files)
-    print(classes)
+    classes= ['LBBB', 'STD', 'Normal', 'RBBB', 'AF', 'I-AVB', 'STE', 'PAC', 'PVC'] 
+    print(get_classes(input_directory,input_files))
 
     # Load model.
     print('Loading 12ECG model...')
-    model = load_12ECG_model()
+    model = load_12ECG_model(model_path)
 
     # Iterate over files.
     print('Extracting 12ECG features...')
