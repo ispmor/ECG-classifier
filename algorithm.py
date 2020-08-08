@@ -3,19 +3,21 @@ from nbeats_pytorch.model import NBeatsNet
 import os
 import torch
 from torch import optim
+from config import default_net_params 
 
 
 class Model:
-    def __init__(self, device=torch.device('cpu')):
-        self.forecast_length = 200
+    def __init__(self, device=torch.device('cpu'), counter=9):
+        self.forecast_length = default_net_params["forecast_length"]
         self.backcast_length = 6 * self.forecast_length
-        self.batch_size = 64# 256
-        self.classes = ['LBBB', 'STD', 'Normal', 'RBBB', 'AF', 'I-AVB', 'STE', 'PAC', 'PVC']
+        self.batch_size =  default_net_params["batch_size"]
+        self.classes =  default_net_params["classes"]
         self.device = device
         self.nets = {}
         self.scores = {}
         self.scores_norm = {}
         self.scores_final = {}
+        self.plots_counter = counter
 
     def load(self, path=""):
         for d in self.classes:
@@ -38,9 +40,10 @@ class Model:
             self.nets[d] = net
 
     def predict(self, data, data_header):
-        x, y = naf.organise_data(data, data_header, self.forecast_length, self.backcast_length, self.batch_size, self.device)
+        x, y, true_label = naf.organise_data(data, data_header, self.forecast_length, self.backcast_length, self.batch_size, self.device)
         for c in self.classes:
-            self.scores[c] = naf.get_avg_score(self.nets[c], x , y, c)
+            self.scores[c] = naf.get_avg_score(self.nets[c], x , y, c, self.plots_counter, plot_title=true_label)
+            self.plots_counter -= 1
 
         scores = list(self.scores.values())
 

@@ -5,11 +5,12 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 import pandas
 import torch
-
+from datetime import date
+import config
 from scipy import stats
 from torch.nn import functional as F
 
-
+today = date.today().strftime("%d%m%Y")
 def plot_scatter(*args, **kwargs):
     plt.plot(*args, **kwargs)
     plt.scatter(*args, **kwargs)
@@ -178,10 +179,37 @@ def train_full_grad_steps(data, device, net, optimiser, test_losses, training_ch
     
 
 
-def get_avg_score(net, x_test, y_test, name):
+def get_avg_score(net, x_test, y_test, name, plot_counter=0, plot_title=""):
+    backcast_length = config.default_net_params["backcast_length"]
+    forecast_length = config.default_net_params["forecast_length"]
     net.eval()
     _, forecast = net(x_test.clone().detach())
     singular_loss = F.mse_loss(forecast, y_test.clone().detach()).item()
+    
+    if plot_counter > 0:
+        if not os.path.exists(f"/home/puszkar/ecg/results/images/{today}v1"):
+            os.mkdir(f"/home/puszkar/ecg/results/images/{today}v1")
+        p = forecast.detach().cpu().numpy()
+        subplots = [221, 222, 223, 224]
+        plt.figure(1, figsize=(12, 10))
+        plt.title(plot_title)
+        for plot_id, i in enumerate(np.random.choice(range(len(x_test)), size=4, replace=False)):
+            ff, xx, yy = p[i], x_test.detach().cpu().numpy()[i], y_test.detach().cpu().numpy()[i]
+            plt.subplot(subplots[plot_id])
+            plt.grid()
+            plt.ylabel("Values normalised")
+            x_label_with_true = f"Time (1/500 s), true label: {plot_title}"
+            plt.xlabel(x_label_with_true)
+            plot_scatter(range(0, backcast_length), xx, color='b')
+            plot_scatter(range(backcast_length, backcast_length + forecast_length), yy, color='g')
+            plot_scatter(range(backcast_length, backcast_length + forecast_length), ff, color='r')
+        plt.savefig(f"/home/puszkar/ecg/results/images/{today}v1/{name}_latest_eval.png")
+        plt.close()
+    
+    if "RBBB" in name:
+        singular_loss *= 1.3
+    if "PAC" in name:
+        singular_loss *= 1.3
     """
     if "LBBB" in name:
         singular_loss *= 1.3
@@ -257,5 +285,7 @@ def organise_data(data, data_header, forecast_length, backcast_length, batch_siz
     if len(x) > 7500:
         x = x[0:7500]
         y = y[0:7500]
+    
+    true_label = data_header[-4]
 
-    return x, y
+    return x, y, true_label
