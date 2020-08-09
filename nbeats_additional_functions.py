@@ -43,7 +43,7 @@ def batcher(dataset, batch_size, infinite=False):
 
 def load(checkpoint_name, model, optimiser):
     if os.path.exists(checkpoint_name):
-        checkpoint = torch.load(checkpoint_name, map_location=torch.device('cpu'))
+        checkpoint = torch.load(checkpoint_name, map_location=torch.device('cuda:1'))
         model.load_state_dict(checkpoint['model_state_dict'])
         model.cuda()
         optimiser.load_state_dict(checkpoint['optimiser_state_dict'])
@@ -110,9 +110,10 @@ def eval_test(backcast_length, forecast_length, net, norm_constant, test_losses,
     #Juan
     #p = forecast.detach().numpy()
     
-    p = forecast.detach().cpu().numpy()
+    
     if visualise:
         subplots = [221, 222, 223, 224]
+        p = forecast.detach().cpu().numpy()
         plt.figure(1)
         for plot_id, i in enumerate(np.random.choice(range(len(x_test)), size=4, replace=False)):
             ff, xx, yy = p[i] * norm_constant, x_test[i] * norm_constant, y_test[i] * norm_constant
