@@ -126,7 +126,7 @@ def eval_test(backcast_length, forecast_length, net, norm_constant, test_losses,
         
         
 
-def evaluate_training(backcast_length, forecast_length, net, norm_constant, test_losses, x_test, y_test, the_lowest_error, device, plot_eval=False, class_dir="", step=0):
+def evaluate_training(backcast_length, forecast_length, net, norm_constant, test_losses, x_test, y_test, the_lowest_error, device, experiment, plot_eval=False, class_dir="", step=0):
     net.eval()
     _, forecast = net(x_test.clone().detach())
     
@@ -143,9 +143,9 @@ def evaluate_training(backcast_length, forecast_length, net, norm_constant, test
     if plot_eval:
         p = forecast.detach().cpu().numpy()
         subplots = [221, 222, 223, 224]
-        plt.figure(1, figsize=(12, 10))
+        fig = plt.figure(1, figsize=(12, 10))
         for plot_id, i in enumerate(np.random.choice(range(len(x_test)), size=4, replace=False)):
-            ff, xx, yy = p[i] * norm_constant, x_test[i] * norm_constant, y_test[i] * norm_constant
+            ff, xx, yy = p[i], x_test.detach().cpu().numpy()[i], y_test.detach().cpu().numpy()[i]
             plt.subplot(subplots[plot_id])
             plt.grid()
             plt.ylabel("Values normalised")
@@ -153,7 +153,10 @@ def evaluate_training(backcast_length, forecast_length, net, norm_constant, test
             plot_scatter(range(0, backcast_length), xx, color='b')
             plot_scatter(range(backcast_length, backcast_length + forecast_length), yy, color='g')
             plot_scatter(range(backcast_length, backcast_length + forecast_length), ff, color='r')
-        plt.savefig(f"images/{class_dir}latest_eval{step}.png")
+        experiment.log_image('epoch_test_eval_visualisation', fig)
+        if not os.path.exists(f"/home/puszkar/ecg/results/images/training_eval/{today}v1"):
+            os.mkdir(f"/home/puszkar/ecg/results/images/training_eval/{today}v1")
+        plt.savefig(f"/home/puszkar/ecg/results/images/training_eval/{today}v1/{class_dir}_latest_eval.png")
         plt.close()
     
     return singular_loss
@@ -177,7 +180,24 @@ def train_full_grad_steps(data, device, net, optimiser, test_losses, training_ch
         if local_step > 0 and local_step % size == 0:
             return global_step
     
-    
+def plot_singlas(x, y, file_name, diagnosis, experiment):
+    backcast_length = config.default_net_params["backcast_length"]
+    forecast_length = config.default_net_params["forecast_length"]
+    subplots = [221, 222, 223, 224]
+    fig = plt.figure(1, figsize=(12, 10))
+    plt.title(diagnosis)
+    for plot_id, i in enumerate(np.random.choice(range(len(x)), size=4, replace=False)):
+        xx, yy = x.detach().cpu().numpy()[i], y.detach().cpu().numpy()[i]
+        plt.subplot(subplots[plot_id])
+        plt.grid()
+        plt.ylabel("Values")
+        x_label_with_true = f"File name: {file_name}, diagnosis: {diagnosis}"
+        plt.xlabel(x_label_with_true)
+        plot_scatter(range(0, backcast_length), xx, color='b')
+        plot_scatter(range(backcast_length, backcast_length + forecast_length), yy, color='g')
+    experiment.log_image('file-visualisation', fig)
+    plt.close()
+
 
 
 def get_avg_score(net, x_test, y_test, name, plot_counter=0, plot_title=""):
@@ -207,11 +227,12 @@ def get_avg_score(net, x_test, y_test, name, plot_counter=0, plot_title=""):
         plt.savefig(f"/home/puszkar/ecg/results/images/{today}v1/{name}_latest_eval.png")
         plt.close()
     
+    """
     if "RBBB" in name:
         singular_loss *= 1.3
     if "PAC" in name:
         singular_loss *= 1.3
-    """
+    
     if "LBBB" in name:
         singular_loss *= 1.3
     if "I-AVB" in name:
@@ -228,19 +249,13 @@ def one_file_training_data(data_dir, file, forecast_length, backcast_length, bat
     normal_signal_data = [y for sublist in normal_signal_data for y in sublist]
     normal_signal_data = np.array(normal_signal_data)
     normal_signal_data.flatten()
-
-    df = pandas.DataFrame({'data': normal_signal_data})
-    df['z_score']=stats.zscore(df['data'])
-    """
-    print("----------------------")
-    print(df.info())
-    print(df.describe())
-    print("----------------------")
-    """
+    print(x[1])
+    diagnosis = x[1]['comments'][2]
 
     norm_constant = np.max(normal_signal_data)
+    norm_min = np.min(normal_signal_data)
     #print(norm_constant)
-    normal_signal_data = normal_signal_data / norm_constant  # leak to the test set here.
+    normal_signal_data = (normal_signal_data - norm_min) / (norm_constant - norm_min)  # leak to the test set here.
 
     x_train_batch, y = [], []
     for i in range(backcast_length, len(normal_signal_data) - forecast_length):
@@ -259,7 +274,7 @@ def one_file_training_data(data_dir, file, forecast_length, backcast_length, bat
     x_train, x_test, y_train, y_test = train_test_split(x_train_batch, y, test_size=0.005, random_state=17)
     data = data_generator(x_train, y_train, batch_size)
 
-    return data,x_train, y_train, x_test, y_test, norm_constant
+    return data,x_train, y_train, x_test, y_test, norm_constant, diagnosis
 
 
 def organise_data(data, data_header, forecast_length, backcast_length, batch_size , cuda):
@@ -272,8 +287,9 @@ def organise_data(data, data_header, forecast_length, backcast_length, batch_siz
 
 
     norm_constant = np.max(normal_signal_data)
+    norm_min = np.min(normal_signal_data)
     #print(norm_constant)
-    normal_signal_data = normal_signal_data / norm_constant  # leak to the test set here.
+    normal_signal_data = (normal_signal_data - norm_min) / (norm_constant - norm_min)  # leak to the test set here.
 
     x, y = [], []
     for i in range(backcast_length, len(normal_signal_data) - forecast_length):

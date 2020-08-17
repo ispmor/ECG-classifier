@@ -40,7 +40,7 @@ for directory_name in d:
 dirs = dirs[1:]
 
 threshold = 0.0001
-limit = 600
+limit = 100
 plot_eval = False
 
 # Bart
@@ -63,6 +63,7 @@ neptune.init('puszkarb/ecg-dyplom')
 def train_full_grad_steps(data, device, net, optimiser, test_losses, training_checkpoint, size):
     global_step = naf.load(training_checkpoint, net, optimiser)
     local_step = 0
+    each_epoch_plot = True
     for x_train_batch, y_train_batch in data:
         global_step += 1
         local_step += 1
@@ -74,7 +75,7 @@ def train_full_grad_steps(data, device, net, optimiser, test_losses, training_ch
         optimiser.step()
         if global_step > 0 and global_step % 100 == 0:
             with torch.no_grad():
-                print("Training batches passed: %d" % (local_step), end="\r")
+                print("Training batches passed: %d" % (local_step))
                 naf.save(training_checkpoint, net, optimiser, global_step)
         if local_step > 0 and local_step % size == 0:
             print(local_step)
@@ -89,7 +90,6 @@ backcast_length = dnp["backcast_length"]
 hidden = dnp["hidden_layer_units"]
 
 for folder_name in dirs:
-    print("Folder loop")
     experiment = neptune.create_experiment(name=folder_name + f'-f{forecast_length}-b{backcast_length}-btch{batch_size}-h{hidden}')
    
 
@@ -121,20 +121,21 @@ for folder_name in dirs:
     epoch = 0
 
     for (_, dirs, files) in os.walk(actual_class_dir):
-        print("\t\t\t _, dirs, files loop, epoch: %d\t\n" % (epoch))
+        print("\t _, dirs, files loop, epoch: %d\t\n" % (epoch))
         difference = 1000
         for fil in files:
-            print("\t\t FIle loop, \t\t epoch: %d\n" % (epoch))
+            print("\t\t FIle loop, epoch: %d\n" % (epoch))
+            plot_file = True
             i = 0
             if 'mat' in fil:
                 continue
 
-            print(actual_class_dir, fil, end="\r")
+            print("Reading files from: %s, file loaded: %s" % (actual_class_dir, fil))
             
-            if epoch > 100 or difference < threshold:
+            if epoch > 100 : #or difference < threshold:
                 break
 
-            data, x_train, y_train, x_test, y_test, norm_constant = naf.one_file_training_data(actual_class_dir,
+            data, x_train, y_train, x_test, y_test, norm_constant, diagnosis = naf.one_file_training_data(actual_class_dir,
                                                                                                fil,
                                                                                                forecast_length,
                                                                                                backcast_length,
@@ -162,7 +163,8 @@ for folder_name in dirs:
                                                    x_train,
                                                    y_train,
                                                    the_lowest_error,
-                                                   device)
+                                                   device,
+                                                   experiment=experiment)
                 experiment.log_metric('train_loss', train_eval)
                 
                
@@ -175,12 +177,19 @@ for folder_name in dirs:
                                                  y_test, 
                                                  the_lowest_error,
                                                  device,
-                                                 plot_eval=False,
+                                                 experiment=experiment,
+                                                 plot_eval=True,
                                                  class_dir=name,
                                                  step=i)
                 experiment.log_metric('eval_loss', new_eval)
+                experiment.log_text('file_name', fil)
+                experiment.log_text('direcotry', actual_class_dir)
+                experiment.log_text('diagnosis_from_file', diagnosis)
+                if plot_file:
+                    naf.plot_singlas(x_test, y_test, fil, diagnosis, experiment)
+                    plot_file = False
                 
-                print("\nFile: %s\t Training Loop: %d/%d, New evaluation sccore: %f" % (fil, i, limit, new_eval), end="\r")
+                print("\nFile: %s\t Training Loop: %d/%d, New evaluation sccore: %f" % (fil, i, limit, new_eval))
                 if new_eval < old_eval:
                     difference = old_eval - new_eval
                     old_eval = new_eval
