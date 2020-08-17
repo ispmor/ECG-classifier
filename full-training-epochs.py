@@ -13,6 +13,7 @@ import os
 import torch
 from torch import optim
 from config import default_net_params as dnp
+import sys
 
 print("Starting training script")
 
@@ -23,11 +24,16 @@ data_dir = os.path.dirname(os.getcwd()) + "/data/"
 models = os.path.dirname(os.getcwd()) + "/models/"
 training_models = os.path.dirname(os.getcwd()) + "/models/training/"
 
+classes_variation = False
+
 if not os.path.exists(models):
     os.mkdir(models)
 if not os.path.exists(training_models):
     os.mkdir(training_models)
-
+selected_classes = []
+if len(sys.argv) > 1:
+    selected_classes = sys.argv[1].strip('[]').split(',')
+    classes_variation = True
 
 
 d = [x[0] for x in os.walk(data_dir)]
@@ -38,6 +44,9 @@ for directory_name in d:
         if all(x not in directory_name for x in [",", "training", "test"]):
             dirs.append(directory_name)
 dirs = dirs[1:]
+
+if classes_variation:
+    dirs = [x for x in dirs if x in selected_classes]
 
 threshold = 0.0001
 limit = 100
