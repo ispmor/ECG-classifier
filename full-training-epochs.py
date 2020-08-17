@@ -13,6 +13,7 @@ import os
 import torch
 from torch import optim
 from config import default_net_params as dnp
+from config import exp_net_params as exp
 import sys
 
 print("Starting training script")
@@ -97,6 +98,7 @@ forecast_length = dnp["forecast_length"]
 batch_size = dnp["batch_size"]
 backcast_length = dnp["backcast_length"]
 hidden = dnp["hidden_layer_units"]
+nb_blocks_per_stack = exp["nb_blocks_per_stack"]
 
 for folder_name in dirs:
     experiment = neptune.create_experiment(name=folder_name + f'-f{forecast_length}-b{backcast_length}-btch{batch_size}-h{hidden}')
@@ -113,7 +115,7 @@ for folder_name in dirs:
     net = NBeatsNet(stack_types=[NBeatsNet.GENERIC_BLOCK, NBeatsNet.GENERIC_BLOCK],
                     forecast_length= forecast_length,
                     thetas_dims=[7, 8],
-                    nb_blocks_per_stack=3,
+                    nb_blocks_per_stack=nb_blocks_per_stack,
                     backcast_length=backcast_length,
                     hidden_layer_units=hidden,
                     share_weights_in_stack=False,
