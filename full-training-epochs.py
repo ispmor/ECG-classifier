@@ -101,16 +101,16 @@ hidden = dnp["hidden_layer_units"]
 nb_blocks_per_stack = exp["nb_blocks_per_stack"]
 
 for folder_name in dirs:
-    experiment = neptune.create_experiment(name=folder_name + f'-f{forecast_length}-b{backcast_length}-btch{batch_size}-h{hidden}')
+    experiment = neptune.create_experiment(name=folder_name + f'bl{nb_blocks_per_stack}-f{forecast_length}-b{backcast_length}-btch{batch_size}-h{hidden}')
    
 
     name = folder_name.split("/")[-1]
-    checkpoint_name = name + "_" + checkpoint_name_BASE+ f'-f{forecast_length}-b{backcast_length}-btch{batch_size}-h{hidden}'
-    training_checkpoint = name + checkpoint_training_base + f'-f{forecast_length}-b{backcast_length}-btch{batch_size}-h{hidden}' + ".th"
+    checkpoint_name = name + "_" + checkpoint_name_BASE+ f'bl{nb_blocks_per_stack}-f{forecast_length}-b{backcast_length}-btch{batch_size}-h{hidden}'
+    training_checkpoint = name + checkpoint_training_base + f'bl{nb_blocks_per_stack}-f{forecast_length}-b{backcast_length}-btch{batch_size}-h{hidden}' + ".th"
 
 
-    if os.path.isfile(training_checkpoint):
-        continue
+    if os.path.isfile("/home/puszkar/ecg/models/training/" + training_checkpoint):
+        os.remove("/home/puszkar/ecg/models/training/" + training_checkpoint)
 
     net = NBeatsNet(stack_types=[NBeatsNet.GENERIC_BLOCK, NBeatsNet.GENERIC_BLOCK],
                     forecast_length= forecast_length,
@@ -143,7 +143,7 @@ for folder_name in dirs:
 
             print("Reading files from: %s, file loaded: %s" % (actual_class_dir, fil))
             
-            if epoch > 100 : #or difference < threshold:
+            if epoch >= 15 : #or difference < threshold:
                 break
 
             data, x_train, y_train, x_test, y_test, norm_constant, diagnosis = naf.one_file_training_data(actual_class_dir,
@@ -157,7 +157,7 @@ for folder_name in dirs:
             while i < 5:  #difference > threshold and
                 i += 1
                 epoch += 1
-                print(epoch)
+                print("Actual epoch: ", epoch, "\nActual inside file loop: ", i)
                 global_step = train_full_grad_steps(data,
                                                         device,
                                                         net,

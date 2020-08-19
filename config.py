@@ -16,5 +16,5 @@ exp_net_params = dict(
     classes = ['LBBB', 'STD', 'Normal', 'RBBB', 'AF', 'I-AVB', 'STE', 'PAC', 'PVC'],
     backcast_multiplier = 6,
     hidden_layer_units=16,
-    nb_blocks_per_stack= 6
+    nb_blocks_per_stack= 8
 )
