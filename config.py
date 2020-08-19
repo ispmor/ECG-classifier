@@ -5,7 +5,8 @@ default_net_params = dict(
     classes = ['LBBB', 'STD', 'Normal', 'RBBB', 'AF', 'I-AVB', 'STE', 'PAC', 'PVC'],
     backcast_multiplier = 6,
     hidden_layer_units=16,
-    nb_blocks_per_stack=3
+    nb_blocks_per_stack=3,
+    thetas_dim=[7,8]
 )
 
 
@@ -16,5 +17,8 @@ exp_net_params = dict(
     classes = ['LBBB', 'STD', 'Normal', 'RBBB', 'AF', 'I-AVB', 'STE', 'PAC', 'PVC'],
     backcast_multiplier = 6,
     hidden_layer_units=16,
-    nb_blocks_per_stack= 8
+    nb_blocks_per_stack= 8,
+    thetas_dim=[16,32]
 )
+
+epoch_limit = 50

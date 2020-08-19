@@ -14,6 +14,7 @@ import torch
 from torch import optim
 from config import default_net_params as dnp
 from config import exp_net_params as exp
+from config import epoch_limit
 import sys
 
 print("Starting training script")
@@ -99,7 +100,7 @@ batch_size = dnp["batch_size"]
 backcast_length = dnp["backcast_length"]
 hidden = dnp["hidden_layer_units"]
 nb_blocks_per_stack = exp["nb_blocks_per_stack"]
-
+thetas_dim = exp["thetas_dim"]
 for folder_name in dirs:
     experiment = neptune.create_experiment(name=folder_name + f'bl{nb_blocks_per_stack}-f{forecast_length}-b{backcast_length}-btch{batch_size}-h{hidden}')
    
@@ -114,7 +115,7 @@ for folder_name in dirs:
 
     net = NBeatsNet(stack_types=[NBeatsNet.GENERIC_BLOCK, NBeatsNet.GENERIC_BLOCK],
                     forecast_length= forecast_length,
-                    thetas_dims=[7, 8],
+                    thetas_dims=thetas_dim,
                     nb_blocks_per_stack=nb_blocks_per_stack,
                     backcast_length=backcast_length,
                     hidden_layer_units=hidden,
@@ -143,7 +144,7 @@ for folder_name in dirs:
 
             print("Reading files from: %s, file loaded: %s" % (actual_class_dir, fil))
             
-            if epoch >= 15 : #or difference < threshold:
+            if epoch >= epoch_limit : #or difference < threshold:
                 break
 
             data, x_train, y_train, x_test, y_test, norm_constant, diagnosis = naf.one_file_training_data(actual_class_dir,
