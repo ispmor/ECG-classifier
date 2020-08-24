@@ -208,7 +208,7 @@ for folder_name in dirs:
                     with torch.no_grad():
                         if old_checkpoint:
                             os.remove(models+old_checkpoint)
-                        new_checkpoint_name = str(checkpoint_name[:-3] + str(len(test_losses)) + ".th")
+                        new_checkpoint_name = str(checkpoint_name + ".th")
                         naf.save(models + new_checkpoint_name, net, optimiser, global_step)
                         old_checkpoint = new_checkpoint_name
                         

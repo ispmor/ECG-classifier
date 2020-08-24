@@ -224,7 +224,7 @@ def get_avg_score(net, x_test, y_test, name, plot_counter=0, plot_title=""):
             plot_scatter(range(0, backcast_length), xx, color='b')
             plot_scatter(range(backcast_length, backcast_length + forecast_length), yy, color='g')
             plot_scatter(range(backcast_length, backcast_length + forecast_length), ff, color='r')
-        plt.savefig(f"/home/puszkar/ecg/results/images/{today}v1/{name}_latest_eval.png")
+        plt.savefig(f"/home/puszkar/ecg/results/images/{today}v1/{name}_latest_eval{plot_counter}.png")
         plt.close()
     
     """
