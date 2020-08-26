@@ -3,6 +3,8 @@
 import numpy as np, os, sys
 from scipy.io import loadmat
 from run_12ECG_classifier import load_12ECG_model, run_12ECG_classifier
+import neptune
+from datetime import date
 
 def load_challenge_data(filename):
 
@@ -31,7 +33,8 @@ def save_challenge_predictions(output_directory,filename,scores,labels,classes):
     class_string = ','.join(classes)
     label_string = ','.join(str(i) for i in labels)
     score_string = ','.join(str(i) for i in scores)
-
+    print("THE CSV PREVIEW")
+    print(recording_string + '\n' + class_string + '\n' + label_string + '\n' + score_string + '\n')
     with open(output_file, 'w') as f:
         f.write(recording_string + '\n' + class_string + '\n' + label_string + '\n' + score_string + '\n')
 
@@ -80,15 +83,19 @@ if __name__ == '__main__':
     # Iterate over files.
     print('Extracting 12ECG features...')
     num_files = len(input_files)
+    
+    neptune.init('puszkarb/ecg-dyplom')
+    experiment = neptune.create_experiment(name='Classification-' + f'date:{date.today()}')
 
     for i, f in enumerate(input_files):
         print('    {}/{}...'.format(i+1, num_files))
         tmp_input_file = os.path.join(input_directory,f)
         print(f"File name: {f}")
         data,header_data = load_challenge_data(tmp_input_file)
-        current_label, current_score = run_12ECG_classifier(data,header_data,classes, model)
+        current_label, current_score = run_12ECG_classifier(data,header_data,classes, model, experiment)
         # Save results.
-        save_challenge_predictions(output_directory,f,current_score,current_label,classes)
+        save_challenge_predictions(output_directory,f,current_score,current_label,sorted(classes)
+)
 
 
     print('Done.')

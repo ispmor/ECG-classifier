@@ -7,7 +7,7 @@ from config import default_net_params, exp_net_params
 
 
 class Model:
-    def __init__(self, device=torch.device('cpu'), counter=27):
+    def __init__(self, device=torch.device('cpu'), counter=54):
         self.forecast_length = exp_net_params["forecast_length"]
         self.backcast_length = exp_net_params["backcast_length"]
         self.batch_size =  exp_net_params["batch_size"]
@@ -53,10 +53,10 @@ class Model:
             net.to(self.device)
             self.nets[d] = net
 
-    def predict(self, data, data_header):
+    def predict(self, data, data_header, experiment):
         x, y, true_label = naf.organise_data(data, data_header, self.forecast_length, self.backcast_length, self.batch_size, self.device)
         for c in self.classes:
-            self.scores[c] = naf.get_avg_score(self.nets[c], x , y, c, self.plots_counter, plot_title=true_label)
+            self.scores[c] = naf.get_avg_score(self.nets[c], x , y, c, experiment, self.plots_counter, plot_title=true_label)
             self.plots_counter -= 1
 
         scores = list(self.scores.values())
@@ -69,7 +69,7 @@ class Model:
             self.scores_norm[c] = (self.scores[c] - min_score) / (max_score - min_score)
             self.scores_final[c] = 1 - self.scores_norm[c]
             result[c] = 0
-            if self.scores_final[c] > 0.99:
+            if self.scores_final[c] == 1:
                 result[c] = 1
         print(self.scores_norm)
         print(self.scores_final)

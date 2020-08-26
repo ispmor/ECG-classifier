@@ -200,7 +200,7 @@ def plot_singlas(x, y, file_name, diagnosis, experiment):
 
 
 
-def get_avg_score(net, x_test, y_test, name, plot_counter=0, plot_title=""):
+def get_avg_score(net, x_test, y_test, name, experiment, plot_counter=0, plot_title=""):
     backcast_length = config.default_net_params["backcast_length"]
     forecast_length = config.default_net_params["forecast_length"]
     net.eval()
@@ -212,7 +212,8 @@ def get_avg_score(net, x_test, y_test, name, plot_counter=0, plot_title=""):
             os.mkdir(f"/home/puszkar/ecg/results/images/{today}v1")
         p = forecast.detach().cpu().numpy()
         subplots = [221, 222, 223, 224]
-        plt.figure(1, figsize=(12, 10))
+        fig = plt.figure(1, figsize=(12, 10))
+        plot_title = plot_title + f"----Used Network: {name}" 
         plt.title(plot_title)
         for plot_id, i in enumerate(np.random.choice(range(len(x_test)), size=4, replace=False)):
             ff, xx, yy = p[i], x_test.detach().cpu().numpy()[i], y_test.detach().cpu().numpy()[i]
@@ -224,7 +225,7 @@ def get_avg_score(net, x_test, y_test, name, plot_counter=0, plot_title=""):
             plot_scatter(range(0, backcast_length), xx, color='b')
             plot_scatter(range(backcast_length, backcast_length + forecast_length), yy, color='g')
             plot_scatter(range(backcast_length, backcast_length + forecast_length), ff, color='r')
-        plt.savefig(f"/home/puszkar/ecg/results/images/{today}v1/{name}_latest_eval{plot_counter}.png")
+        experiment.log_image('signal-visualisation', fig)
         plt.close()
     
     """
