@@ -63,6 +63,7 @@ if __name__ == '__main__':
     input_directory = sys.argv[1]
     output_directory = sys.argv[2]
     model_path = sys.argv[3] if len(sys.argv) > 3 else ""
+    lead = int(sys.argv[4] if len(sys.argv) > 4 else 3
 
     # Find files.
     input_files = []
@@ -92,7 +93,7 @@ if __name__ == '__main__':
         tmp_input_file = os.path.join(input_directory,f)
         print(f"File name: {f}")
         data,header_data = load_challenge_data(tmp_input_file)
-        current_label, current_score = run_12ECG_classifier(data,header_data,classes, model, experiment)
+        current_label, current_score = run_12ECG_classifier(data,header_data,classes, model, experiment, lead=lead)
         # Save results.
         save_challenge_predictions(output_directory,f,current_score,current_label,sorted(classes)
 )

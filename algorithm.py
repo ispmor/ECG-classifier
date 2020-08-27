@@ -25,7 +25,7 @@ class Model:
 
     def load(self, path=""):
         for d in self.classes:
-            checkpoint = d + "_" + self.checkpoint_name_BASE+ f'bl{self.nb_blocks_per_stack}-f{self.forecast_length}-b{self.backcast_length}-btch{self.batch_size}.th' #-h{self.hidden_layer_units}.th'
+            checkpoint = d + "_" + self.checkpoint_name_BASE+ f'bl{self.nb_blocks_per_stack}-f{self.forecast_length}-b{self.backcast_length}-btch{self.batch_size}-h{self.hidden_layer_units}.th'
             if path:
                 checkpoint = path + checkpoint
             
@@ -53,8 +53,8 @@ class Model:
             net.to(self.device)
             self.nets[d] = net
 
-    def predict(self, data, data_header, experiment):
-        x, y, true_label = naf.organise_data(data, data_header, self.forecast_length, self.backcast_length, self.batch_size, self.device)
+    def predict(self, data, data_header, experiment, lead=3):
+        x, y, true_label = naf.organise_data(data, data_header, self.forecast_length, self.backcast_length, self.batch_size, self.device, lead=lead)
         for c in self.classes:
             self.scores[c] = naf.get_avg_score(self.nets[c], x , y, c, experiment, self.plots_counter, plot_title=true_label)
             self.plots_counter -= 1

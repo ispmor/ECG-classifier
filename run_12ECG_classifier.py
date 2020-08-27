@@ -3,13 +3,13 @@ from algorithm import Model
 import torch
 
 
-def run_12ECG_classifier(data,header_data,classes,model, experiment):
+def run_12ECG_classifier(data,header_data,classes,model, experiment, lead=3):
 
     num_classes = len(classes)
     current_label = []
     current_score = []
 
-    label = model.predict(data, header_data, experiment)
+    label = model.predict(data, header_data, experiment, lead)
     score = model.scores_final
     print(header_data[-4])
 

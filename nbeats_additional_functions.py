@@ -242,11 +242,11 @@ def get_avg_score(net, x_test, y_test, name, experiment, plot_counter=0, plot_ti
     return singular_loss
 
 
-def one_file_training_data(data_dir, file, forecast_length, backcast_length, batch_size, cuda):
+def one_file_training_data(data_dir, file, forecast_length, backcast_length, batch_size, cuda, lead=3):
     normal_signal_data = []
 
     x = wfdb.io.rdsamp(data_dir + file[:-4])
-    normal_signal_data.append(x[0][:, 3])
+    normal_signal_data.append(x[0][:, lead])
     normal_signal_data = [y for sublist in normal_signal_data for y in sublist]
     normal_signal_data = np.array(normal_signal_data)
     normal_signal_data.flatten()
@@ -278,10 +278,10 @@ def one_file_training_data(data_dir, file, forecast_length, backcast_length, bat
     return data,x_train, y_train, x_test, y_test, norm_constant, diagnosis
 
 
-def organise_data(data, data_header, forecast_length, backcast_length, batch_size , cuda):
+def organise_data(data, data_header, forecast_length, backcast_length, batch_size , cuda, lead=3):
     normal_signal_data = []
 
-    normal_signal_data.append(data[3])
+    normal_signal_data.append(data[lead])
     normal_signal_data = [y for sublist in normal_signal_data for y in sublist]
     normal_signal_data = np.array(normal_signal_data)
     normal_signal_data.flatten()

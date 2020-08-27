@@ -33,9 +33,17 @@ if not os.path.exists(models):
 if not os.path.exists(training_models):
     os.mkdir(training_models)
 selected_classes = []
+lead = 3
 if len(sys.argv) > 1:
-    selected_classes = sys.argv[1].strip('[]').split(',')
-    classes_variation = True
+    if not sys.argv[1].isnumeric() and len(sys.argv) < 3:
+        selected_classes = sys.argv[1].strip('[]').split(',')
+        classes_variation = True
+    elif not sys.argv[1].isnumeric() and len(sys.argv) > 2:
+        selected_classes = sys.argv[1].strip('[]').split(',')
+        classes_variation = True
+        lead = int(sys.argv[2])
+    else:
+        lead = int(sys.argv[1])
 
 
 d = [x[0] for x in os.walk(data_dir)]
@@ -51,7 +59,7 @@ if classes_variation:
     dirs = [x for x in dirs if x in selected_classes]
 
 threshold = 0.0001
-limit = 100
+limit = 50
 plot_eval = False
 
 # Bart
@@ -66,6 +74,8 @@ torch.pin_memory=False
 print("Considered classes: %s" % (dirs))
 
 neptune.init('puszkarb/ecg-dyplom')
+
+
 
 
 # In[4]:
@@ -102,7 +112,7 @@ hidden = dnp["hidden_layer_units"]
 nb_blocks_per_stack = exp["nb_blocks_per_stack"]
 thetas_dim = exp["thetas_dim"]
 for folder_name in dirs:
-    experiment = neptune.create_experiment(name=folder_name + f'bl{nb_blocks_per_stack}-f{forecast_length}-b{backcast_length}-btch{batch_size}-h{hidden}')
+    experiment = neptune.create_experiment(name=folder_name + f'bl{nb_blocks_per_stack}-f{forecast_length}-b{backcast_length}-btch{batch_size}-h{hidden}-l{lead+ 1}')
    
 
     name = folder_name.split("/")[-1]
@@ -152,7 +162,8 @@ for folder_name in dirs:
                                                                                                forecast_length,
                                                                                                backcast_length,
                                                                                                batch_size,
-                                                                                               device)
+                                                                                               device,
+                                                                                               lead=lead)
             
 
             while i < 5:  #difference > threshold and
