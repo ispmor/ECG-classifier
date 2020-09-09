@@ -22,3 +22,18 @@ exp_net_params = dict(
 )
 
 epoch_limit = 50
+
+
+leads_dict_available= True
+# leads are provided REAL - 1
+leads_dict = {
+    'AF': 2,
+    'I-AVB':1,
+    'LBBB' : 11,
+    'Normal':2,
+    'PAC':1,
+    'PVC':1,
+    'RBBB':0,
+    'STD':2,
+    'STE':4  
+}

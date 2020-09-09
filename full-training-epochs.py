@@ -12,9 +12,11 @@ import nbeats_additional_functions as naf
 import os
 import torch
 from torch import optim
+from config import leads_dict_available
 from config import default_net_params as dnp
 from config import exp_net_params as exp
 from config import epoch_limit
+from config import leads_dict 
 import sys
 
 print("Starting training script")
@@ -44,6 +46,9 @@ if len(sys.argv) > 1:
         lead = int(sys.argv[2])
     else:
         lead = int(sys.argv[1])
+
+if leads_dict_available:
+    best_leads = leads_dict
 
 
 d = [x[0] for x in os.walk(data_dir)]
@@ -112,6 +117,8 @@ hidden = dnp["hidden_layer_units"]
 nb_blocks_per_stack = exp["nb_blocks_per_stack"]
 thetas_dim = exp["thetas_dim"]
 for folder_name in dirs:
+    if leads_dict_available:
+        lead = leads_dict[folder_name]
     experiment = neptune.create_experiment(name=folder_name + f'bl{nb_blocks_per_stack}-f{forecast_length}-b{backcast_length}-btch{batch_size}-h{hidden}-l{lead+ 1}')
    
 
