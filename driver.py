@@ -97,7 +97,7 @@ if __name__ == '__main__':
         tmp_input_file = os.path.join(input_directory,f)
         print(f"File name: {f}")
         data,header_data = load_challenge_data(tmp_input_file)
-        current_label, current_score = run_12ECG_classifier(data,header_data,classes, model, experiment, leads_dict_available, lead=lead)
+        current_label, current_score = run_12ECG_classifier(data,header_data,classes, model, experiment, leads_dict_available, lead=lead, file_name = f)
         # Save results.
         save_challenge_predictions(output_directory,f,current_score,current_label,sorted(classes)
 )

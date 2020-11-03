@@ -73,9 +73,6 @@ def train_100_grad_steps(checkpoint_name, data, device, net, optimiser, test_los
         loss = F.mse_loss(forecast, torch.tensor(y_train_batch, dtype=torch.float).to(device))
         loss.backward()
         optimiser.step()
-        #Juan
-        #if global_step % 30 == 0:
-            #print(f'grad_step = {str(global_step).zfill(6)}, tr_loss = {loss.item():.6f}, te_loss = {test_losses[-1]:.6f}')
         if global_step > 0 and global_step % 100 == 0:
             with torch.no_grad():
                 save(checkpoint_name, net, optimiser, global_step)
@@ -83,7 +80,6 @@ def train_100_grad_steps(checkpoint_name, data, device, net, optimiser, test_los
 
 
 def fit(checkpoint_name, net, optimiser, data_generator, on_save_callback, device, max_grad_steps=10000):
-    #print('--- Training ---')
     initial_grad_step = load(checkpoint_name, net, optimiser)
     for grad_step, (x, target) in enumerate(data_generator):
         grad_step += initial_grad_step
@@ -93,7 +89,6 @@ def fit(checkpoint_name, net, optimiser, data_generator, on_save_callback, devic
         loss = F.mse_loss(forecast, torch.tensor(target, dtype=torch.float).to(device))
         loss.backward()
         optimiser.step()
-        #print(f'grad_step = {str(grad_step).zfill(6)}, loss = {loss.item():.6f}')
         if grad_step % 1000 == 0 or (grad_step < 1000 and grad_step % 100 == 0):
             with torch.no_grad():
                 save(checkpoint_name, net, optimiser, grad_step)
@@ -109,8 +104,6 @@ def eval_test(backcast_length, forecast_length, net, norm_constant, test_losses,
     _, forecast = net(torch.tensor(x_test, dtype=torch.float))
     singular_loss = F.mse_loss(forecast, torch.tensor(y_test, dtype=torch.float)).item()
     test_losses.append(singular_loss)
-    #Juan
-    #p = forecast.detach().numpy()
     
     
     if visualise:
@@ -208,7 +201,8 @@ def get_avg_score(net, x_test, y_test, name, experiment, plot_counter=0, plot_ti
     forecast_length = config.default_net_params["forecast_length"]
     net.eval()
     _, forecast = net(x_test.clone().detach())
-    #singular_loss = F.mse_loss(forecast, y_test.clone().detach()).item()
+    singular_loss = F.mse_loss(forecast, y_test.clone().detach()).item()
+    '''
     y_test_numpy = np.nan_to_num(y_test.clone().detach().cpu().numpy())
     forecast_numpy = np.nan_to_num(forecast.clone().detach().cpu().numpy())
  
@@ -216,6 +210,8 @@ def get_avg_score(net, x_test, y_test, name, experiment, plot_counter=0, plot_ti
     forecast_1d = np.append(forecast_numpy[0], [x[-1] for x in forecast_numpy])
     singular_loss, path = fastdtw(y_test_numpy, forecast_numpy, dist=euclidean)
     experiment.log_metric(f'dtw-distance-{name}', singular_loss)
+    '''
+    experiment.log_metric(f'mse-loss-distance-{name}', singular_loss)
     
     if plot_counter > 0:
         if not os.path.exists(f"/home/puszkar/ecg/results/images/{today}v1"):
@@ -225,7 +221,7 @@ def get_avg_score(net, x_test, y_test, name, experiment, plot_counter=0, plot_ti
         fig = plt.figure(1, figsize=(12, 10))
         plot_title = plot_title + f"----Used Network: {name}" 
         plt.title(plot_title)
-        for plot_id, i in enumerate(np.random.choice(range(len(x_test)), size=4, replace=False)):
+        for plot_id, i in enumerate([1,100, 500, 1000]):
             ff, xx, yy = p[i], x_test.detach().cpu().numpy()[i], y_test_numpy[i]
             plt.subplot(subplots[plot_id])
             plt.grid()
@@ -237,18 +233,7 @@ def get_avg_score(net, x_test, y_test, name, experiment, plot_counter=0, plot_ti
             plot_scatter(range(backcast_length, backcast_length + forecast_length), ff, color='r')
         experiment.log_image('signal-visualisation', fig)
         plt.close()
-    
-    """
-    if "RBBB" in name:
-        singular_loss *= 1.3
-    if "PAC" in name:
-        singular_loss *= 1.3
-    
-    if "LBBB" in name:
-        singular_loss *= 1.3
-    if "I-AVB" in name:
-        singular_loss *= 1.2
-    """
+
     return singular_loss
 
 

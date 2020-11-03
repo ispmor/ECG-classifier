@@ -8,10 +8,10 @@ from config import leads_dict
 
 
 class Model:
-    def __init__(self, device=torch.device('cpu'), counter=54):
-        self.forecast_length = exp_net_params["forecast_length"]
-        self.backcast_length = exp_net_params["backcast_length"]
-        self.batch_size =  exp_net_params["batch_size"]
+    def __init__(self, device=torch.device('cpu'), counter=90):
+        self.forecast_length = default_net_params["forecast_length"]
+        self.backcast_length = default_net_params["backcast_length"]
+        self.batch_size =  default_net_params["batch_size"]
         self.classes =  exp_net_params["classes"]
         self.nb_blocks_per_stack = exp_net_params["nb_blocks_per_stack"]
         self.thetas = exp_net_params["thetas_dim"]
@@ -35,6 +35,7 @@ class Model:
                 print("-" * 50)
                 print("* /n * /n * /n * /n * /n * /t THERE IS NO CHECKPOINT LIKE THIS! * /n * /n * /n * /n * ")
                 print("-" * 50)
+                raise ValueError("wrong checkpoint name!")
             else:
                 print("-" * 50)
                 print("*/n*/n*/n*/n*/n*/t CHECKPOINT IS VALID WOOOHOO ! */n*/n*/n*/n*")
@@ -54,7 +55,7 @@ class Model:
             net.to(self.device)
             self.nets[d] = net
 
-    def predict(self, data, data_header, experiment, leads_dict_available = False, lead=3):
+    def predict(self, data, data_header, experiment, leads_dict_available = False, lead=3, file_name=""):
         signals_dict={}
         if leads_dict_available:
             for c in self.classes:
@@ -64,7 +65,7 @@ class Model:
         for c in self.classes:
             if leads_dict_available:
                 x, y, true_label = signals_dict[c]
-            self.scores[c] = naf.get_avg_score(self.nets[c], x , y, c, experiment, self.plots_counter, plot_title=true_label)
+            self.scores[c] = naf.get_avg_score(self.nets[c], x , y, c, experiment, self.plots_counter, plot_title=f"from:{file_name}, {true_label}")
             self.plots_counter -= 1
 
         scores = list(self.scores.values())
