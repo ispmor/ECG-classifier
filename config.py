@@ -1,7 +1,7 @@
 default_net_params = dict(
     backcast_length = 1200,
     forecast_length = 200,
-    batch_size = 64,
+    batch_size = 32,
     classes = ['LBBB', 'STD', 'Normal', 'RBBB', 'AF', 'I-AVB', 'STE', 'PAC', 'PVC'],
     backcast_multiplier = 6,
     hidden_layer_units=16,
@@ -10,7 +10,7 @@ default_net_params = dict(
 )
 
 
-exp_net_params = dict(
+old_exp_net_params = dict(
     backcast_length = 1200,
     forecast_length = 200,
     batch_size = 64,
@@ -21,7 +21,20 @@ exp_net_params = dict(
     thetas_dim=[16,32]
 )
 
-epoch_limit = 50
+exp_net_params = dict(
+    backcast_length = 1200,
+    forecast_length = 200,
+    batch_size = 128,
+    classes = ['LBBB', 'STD', 'Normal', 'RBBB', 'AF', 'I-AVB', 'STE', 'PAC', 'PVC'],
+    backcast_multiplier = 6,
+    hidden_layer_units=64,
+    nb_blocks_per_stack= 8,
+    thetas_dim=[32,64]
+)
+
+
+
+epoch_limit = 25
 
 
 leads_dict_available= True

@@ -27,14 +27,16 @@ checkpoint_training_base = "_training"
 data_dir = os.path.dirname(os.getcwd()) + "/data/"
 models = os.path.dirname(os.getcwd()) + "/models/"
 training_models = os.path.dirname(os.getcwd()) + "/models/training/"
+neptune.init('puszkarb/ecg-dyplom')
 
-classes_variation = False
+
+classes_variation = True
 
 if not os.path.exists(models):
     os.mkdir(models)
 if not os.path.exists(training_models):
     os.mkdir(training_models)
-selected_classes = []
+selected_classes = ['STE']
 lead = 3
 if len(sys.argv) > 1:
     if not sys.argv[1].isnumeric() and len(sys.argv) < 3:
@@ -78,7 +80,7 @@ torch.pin_memory=False
 
 print("Considered classes: %s" % (dirs))
 
-neptune.init('puszkarb/ecg-dyplom')
+
 
 
 
@@ -113,24 +115,28 @@ def train_full_grad_steps(data, device, net, optimiser, test_losses, training_ch
 forecast_length = dnp["forecast_length"]
 batch_size = dnp["batch_size"]
 backcast_length = dnp["backcast_length"]
-hidden = exp["hidden_layer_units"]
-nb_blocks_per_stack = exp["nb_blocks_per_stack"]
-thetas_dim = exp["thetas_dim"]
-for folder_name in dirs:
-    if leads_dict_available:
-        lead = leads_dict[folder_name]
-    experiment = neptune.create_experiment(name=folder_name + f'bl{nb_blocks_per_stack}-f{forecast_length}-b{backcast_length}-btch{batch_size}-h{hidden}-l{lead+ 1}')
+hidden = dnp["hidden_layer_units"]
+nb_blocks_per_stack = dnp["nb_blocks_per_stack"]
+thetas_dim_array = [[2,4]]
+for thetas_dim in thetas_dim_array:
+    print(thetas_dim, thetas_dim_array)
+    for folder_name in dirs:
+        print(folder_name, dirs)
+        if leads_dict_available:
+            lead = leads_dict[folder_name]
+        experiment = neptune.create_experiment(name=folder_name + f'bl{nb_blocks_per_stack}-thetas[{thetas_dim[0]},{thetas_dim[1]}]-btch{batch_size}-h{hidden}-l{lead+ 1}')
+        print(experiment)
    
 
-    name = folder_name.split("/")[-1]
-    checkpoint_name = name + "_" + checkpoint_name_BASE+ f'bl{nb_blocks_per_stack}-f{forecast_length}-b{backcast_length}-btch{batch_size}-h{hidden}'
-    training_checkpoint = name + checkpoint_training_base + f'bl{nb_blocks_per_stack}-f{forecast_length}-b{backcast_length}-btch{batch_size}-h{hidden}' + ".th"
+        name = folder_name.split("/")[-1]
+        checkpoint_name = name + "_" + checkpoint_name_BASE+ f'bl{nb_blocks_per_stack}-f{forecast_length}-b{backcast_length}-btch{batch_size}-h{hidden}'
+        training_checkpoint = name + checkpoint_training_base + f'bl{nb_blocks_per_stack}-f{forecast_length}-b{backcast_length}-btch{batch_size}-h{hidden}' + ".th"
 
 
-    if os.path.isfile("/home/puszkar/ecg/models/training/" + training_checkpoint):
-        os.remove("/home/puszkar/ecg/models/training/" + training_checkpoint)
+        if os.path.isfile("/home/puszkar/ecg/models/training/" + training_checkpoint):
+            os.remove("/home/puszkar/ecg/models/training/" + training_checkpoint)
 
-    net = NBeatsNet(stack_types=[NBeatsNet.GENERIC_BLOCK, NBeatsNet.GENERIC_BLOCK],
+        net = NBeatsNet(stack_types=[NBeatsNet.GENERIC_BLOCK, NBeatsNet.GENERIC_BLOCK],
                     forecast_length= forecast_length,
                     thetas_dims=thetas_dim,
                     nb_blocks_per_stack=nb_blocks_per_stack,
@@ -138,33 +144,33 @@ for folder_name in dirs:
                     hidden_layer_units=hidden,
                     share_weights_in_stack=False,
                     device=device)
-    net.cuda()
-    optimiser = optim.Adam(net.parameters())
+        net.cuda()
+        optimiser = optim.Adam(net.parameters())
 
-    test_losses = []
-    old_eval = 100
-    the_lowest_error = [100]
-    old_checkpoint = ""
-    actual_class_dir = data_dir + name + "/"
-    print("N-Beats training for class: %s" % (actual_class_dir))
-    epoch = 0
+        test_losses = []
+        old_eval = 100
+        the_lowest_error = [100]
+        old_checkpoint = ""
+        actual_class_dir = data_dir + name + "/"
+        print("N-Beats training for class: %s" % (actual_class_dir))
+        epoch = 0
 
-    for (_, dirs, files) in os.walk(actual_class_dir):
-        print("\t _, dirs, files loop, epoch: %d\t\n" % (epoch))
-        difference = 1000
-        for fil in files:
-            print("\t\t FIle loop, epoch: %d\n" % (epoch))
-            plot_file = True
-            i = 0
-            if 'mat' in fil:
-                continue
+        for (_, dirs2, files) in os.walk(actual_class_dir):
+            print("\t _, dirs2, files loop, epoch: %d\t\n" % (epoch))
+            difference = 1000
+            for fil in files:
+                print("\t\t FIle loop, epoch: %d\n" % (epoch))
+                plot_file = True
+                i = 0
+                if 'mat' in fil:
+                    continue
 
-            print("Reading files from: %s, file loaded: %s" % (actual_class_dir, fil))
+                print("Reading files from: %s, file loaded: %s" % (actual_class_dir, fil))
             
-            if epoch >= epoch_limit : #or difference < threshold:
-                break
+                if epoch >= epoch_limit : #or difference < threshold:
+                    break
 
-            data, x_train, y_train, x_test, y_test, norm_constant, diagnosis = naf.one_file_training_data(actual_class_dir,
+                data, x_train, y_train, x_test, y_test, norm_constant, diagnosis = naf.one_file_training_data(actual_class_dir,
                                                                                                fil,
                                                                                                forecast_length,
                                                                                                backcast_length,
@@ -173,11 +179,11 @@ for folder_name in dirs:
                                                                                                lead=lead)
             
 
-            while i < 2: #old was 5  #difference > threshold and
-                i += 1
-                epoch += 1
-                print("Actual epoch: ", epoch, "\nActual inside file loop: ", i)
-                global_step = train_full_grad_steps(data,
+                while i < 2: #old was 5  #difference > threshold and
+                    i += 1
+                    epoch += 1
+                    print("Actual epoch: ", epoch, "\nActual inside file loop: ", i)
+                    global_step = train_full_grad_steps(data,
                                                         device,
                                                         net,
                                                         optimiser,
@@ -185,7 +191,7 @@ for folder_name in dirs:
                                                         training_models+training_checkpoint,
                                                         x_train.shape[0])
                 
-                train_eval = naf.evaluate_training(backcast_length,
+                    train_eval = naf.evaluate_training(backcast_length,
                                                    forecast_length,
                                                    net,
                                                    norm_constant,
@@ -195,10 +201,10 @@ for folder_name in dirs:
                                                    the_lowest_error,
                                                    device,
                                                    experiment=experiment)
-                experiment.log_metric('train_loss', train_eval)
+                    experiment.log_metric('train_loss', train_eval)
                 
                
-                new_eval = naf.evaluate_training(backcast_length,
+                    new_eval = naf.evaluate_training(backcast_length,
                                                  forecast_length,
                                                  net,
                                                  norm_constant,
@@ -210,25 +216,26 @@ for folder_name in dirs:
                                                  experiment=experiment,
                                                  plot_eval=True,
                                                  class_dir=name,
-                                                 step=i)
-                experiment.log_metric('eval_loss', new_eval)
-                experiment.log_text('file_name', fil)
-                experiment.log_text('direcotry', actual_class_dir)
-                experiment.log_text('diagnosis_from_file', diagnosis)
-                if plot_file:
-                    naf.plot_singlas(x_test, y_test, fil, diagnosis, experiment)
-                    plot_file = False
+                                                 step=i,
+                                                 file_name=fil)
+                    experiment.log_metric('eval_loss', new_eval)
+                    experiment.log_text('file_name', fil)
+                    experiment.log_text('direcotry', actual_class_dir)
+                    experiment.log_text('diagnosis_from_file', diagnosis)
+                    if plot_file:
+                        naf.plot_singlas(x_test, y_test, fil, diagnosis, experiment)
+                        plot_file = False
                 
-                print("\nFile: %s\t Training Loop: %d/%d, New evaluation sccore: %f" % (fil, i, limit, new_eval))
-                if new_eval < old_eval:
-                    difference = old_eval - new_eval
-                    old_eval = new_eval
-                    with torch.no_grad():
-                        if old_checkpoint:
-                            os.remove(models+old_checkpoint)
-                        new_checkpoint_name = str(checkpoint_name + ".th")
-                        naf.save(models + new_checkpoint_name, net, optimiser, global_step)
-                        old_checkpoint = new_checkpoint_name
-                        
-    experiment.stop()
-
+                    print("\nFile: %s\t Training Loop: %d/%d, New evaluation sccore: %f" % (fil, i, limit, new_eval))
+                    if new_eval < old_eval:
+                        difference = old_eval - new_eval
+                        old_eval = new_eval
+                        with torch.no_grad():
+                            if old_checkpoint:
+                                os.remove(models+old_checkpoint)
+                            new_checkpoint_name = str(checkpoint_name + ".th")
+                            naf.save(models + new_checkpoint_name, net, optimiser, global_step)
+                            old_checkpoint = new_checkpoint_name
+                            
+        experiment.stop()
+    

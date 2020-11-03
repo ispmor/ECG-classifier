@@ -4,6 +4,7 @@ import os
 import torch
 from torch import optim
 from config import default_net_params, exp_net_params 
+from config import leads_dict
 
 
 class Model:
@@ -53,9 +54,16 @@ class Model:
             net.to(self.device)
             self.nets[d] = net
 
-    def predict(self, data, data_header, experiment, lead=3):
-        x, y, true_label = naf.organise_data(data, data_header, self.forecast_length, self.backcast_length, self.batch_size, self.device, lead=lead)
+    def predict(self, data, data_header, experiment, leads_dict_available = False, lead=3):
+        signals_dict={}
+        if leads_dict_available:
+            for c in self.classes:
+                signals_dict[c] = naf.organise_data(data, data_header, self.forecast_length, self.backcast_length, self.batch_size, self.device, lead=leads_dict[c])
+        else:
+            x, y, true_label = naf.organise_data(data, data_header, self.forecast_length, self.backcast_length, self.batch_size, self.device, lead=lead)
         for c in self.classes:
+            if leads_dict_available:
+                x, y, true_label = signals_dict[c]
             self.scores[c] = naf.get_avg_score(self.nets[c], x , y, c, experiment, self.plots_counter, plot_title=true_label)
             self.plots_counter -= 1
 

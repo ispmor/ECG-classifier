@@ -9,6 +9,8 @@ from datetime import date
 import config
 from scipy import stats
 from torch.nn import functional as F
+from scipy.spatial.distance import euclidean
+from fastdtw import fastdtw
 
 today = date.today().strftime("%d%m%Y")
 def plot_scatter(*args, **kwargs):
@@ -126,7 +128,7 @@ def eval_test(backcast_length, forecast_length, net, norm_constant, test_losses,
         
         
 
-def evaluate_training(backcast_length, forecast_length, net, norm_constant, test_losses, x_test, y_test, the_lowest_error, device, experiment, plot_eval=False, class_dir="", step=0):
+def evaluate_training(backcast_length, forecast_length, net, norm_constant, test_losses, x_test, y_test, the_lowest_error, device, experiment, plot_eval=False, class_dir="", step=0, file_name=""):
     net.eval()
     _, forecast = net(x_test.clone().detach())
     
@@ -150,6 +152,7 @@ def evaluate_training(backcast_length, forecast_length, net, norm_constant, test
             plt.grid()
             plt.ylabel("Values normalised")
             plt.xlabel("Time (1/500 s)")
+            plt.title(file_name)
             plot_scatter(range(0, backcast_length), xx, color='b')
             plot_scatter(range(backcast_length, backcast_length + forecast_length), yy, color='g')
             plot_scatter(range(backcast_length, backcast_length + forecast_length), ff, color='r')
@@ -205,18 +208,25 @@ def get_avg_score(net, x_test, y_test, name, experiment, plot_counter=0, plot_ti
     forecast_length = config.default_net_params["forecast_length"]
     net.eval()
     _, forecast = net(x_test.clone().detach())
-    singular_loss = F.mse_loss(forecast, y_test.clone().detach()).item()
+    #singular_loss = F.mse_loss(forecast, y_test.clone().detach()).item()
+    y_test_numpy = np.nan_to_num(y_test.clone().detach().cpu().numpy())
+    forecast_numpy = np.nan_to_num(forecast.clone().detach().cpu().numpy())
+ 
+    y_test_1d = np.append(y_test_numpy[0], [x[-1] for x in y_test_numpy])
+    forecast_1d = np.append(forecast_numpy[0], [x[-1] for x in forecast_numpy])
+    singular_loss, path = fastdtw(y_test_numpy, forecast_numpy, dist=euclidean)
+    experiment.log_metric(f'dtw-distance-{name}', singular_loss)
     
     if plot_counter > 0:
         if not os.path.exists(f"/home/puszkar/ecg/results/images/{today}v1"):
             os.mkdir(f"/home/puszkar/ecg/results/images/{today}v1")
-        p = forecast.detach().cpu().numpy()
+        p = forecast_numpy
         subplots = [221, 222, 223, 224]
         fig = plt.figure(1, figsize=(12, 10))
         plot_title = plot_title + f"----Used Network: {name}" 
         plt.title(plot_title)
         for plot_id, i in enumerate(np.random.choice(range(len(x_test)), size=4, replace=False)):
-            ff, xx, yy = p[i], x_test.detach().cpu().numpy()[i], y_test.detach().cpu().numpy()[i]
+            ff, xx, yy = p[i], x_test.detach().cpu().numpy()[i], y_test_numpy[i]
             plt.subplot(subplots[plot_id])
             plt.grid()
             plt.ylabel("Values normalised")
@@ -259,6 +269,8 @@ def one_file_training_data(data_dir, file, forecast_length, backcast_length, bat
     normal_signal_data = (normal_signal_data - norm_min) / (norm_constant - norm_min)  # leak to the test set here.
 
     x_train_batch, y = [], []
+    dist_to_one = 1 - normal_signal_data[0]
+    normal_signal_data += dist_to_one
     for i in range(backcast_length, len(normal_signal_data) - forecast_length):
         x_train_batch.append(normal_signal_data[i - backcast_length:i])
         y.append(normal_signal_data[i:i + forecast_length])
@@ -292,6 +304,8 @@ def organise_data(data, data_header, forecast_length, backcast_length, batch_siz
     #print(norm_constant)
     normal_signal_data = (normal_signal_data - norm_min) / (norm_constant - norm_min)  # leak to the test set here.
 
+    dist_to_one = 1 - normal_signal_data[0]
+    normal_signal_data += dist_to_one
     x, y = [], []
     for i in range(backcast_length, len(normal_signal_data) - forecast_length):
         x.append(normal_signal_data[i - backcast_length:i])
