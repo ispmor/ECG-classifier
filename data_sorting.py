@@ -106,12 +106,38 @@ def get_clean_diagnosis_train_test_split():
         if not os.path.exists(training_dir + f_name + ".mat"):
             shutil.copy(f_path + ".mat", training_dir)
             shutil.copy(f_path + ".hea", training_dir)
+     
+    
 
-   
+def get_classes_test_split(classes_array):
+    data_dir = os.path.dirname(os.getcwd()) + "/ecg/data/"
+    if not os.path.exists(data_dir):
+        raise ValueError(f"Data_Dir is not properly set, try calling script from different place. Current data_dir: {data_dir}")
+    output_dir = data_dir + "-".join(classes_array) + "test"
+    if not os.path.exists(output_dir):
+        print(f"Output_Dir does not exist, creating: {output_dir}")
+        os.mkdir(output_dir)
+            
+    dataset = []
+    for folder_name in classes_array:
+        for (_, dirs, files) in os.walk(data_dir + folder_name):
+            dataset = dataset + [(data_dir + folder_name + "/" + f[:-4], f[:-4]) for f in files if ".mat" not in f]
+            
+    np.random.shuffle(dataset)
+    train_size = int(len(dataset) * 0.6)
+    test_dataset = dataset[train_size:]
+    print(test_dataset)
+    print(f"dataset len: {len(dataset)}, test_dataset len: {len(test_dataset)}" )
+
+    for f_path, f_name in test_dataset:
+        if not os.path.exists(output_dir + f_name + ".mat"):
+            shutil.copy(f_path + ".mat", output_dir)
+            shutil.copy(f_path + ".hea", output_dir)     
 
 
 
 if __name__ == "__main__":
     #move_clean_test_signals()
     #sort_signals("/home/puszkar/ecg/data/")
-    get_clean_diagnosis_train_test_split()
+    #get_clean_diagnosis_train_test_split()
+    get_classes_test_split(["RBBB", "I-AVB"])

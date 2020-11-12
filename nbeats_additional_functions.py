@@ -202,10 +202,10 @@ def get_avg_score(net, x_test, y_test, name, experiment, plot_counter=0, plot_ti
     net.eval()
     _, forecast = net(x_test.clone().detach())
     singular_loss = F.mse_loss(forecast, y_test.clone().detach()).item()
-    '''
+    
     y_test_numpy = np.nan_to_num(y_test.clone().detach().cpu().numpy())
     forecast_numpy = np.nan_to_num(forecast.clone().detach().cpu().numpy())
- 
+    '''
     y_test_1d = np.append(y_test_numpy[0], [x[-1] for x in y_test_numpy])
     forecast_1d = np.append(forecast_numpy[0], [x[-1] for x in forecast_numpy])
     singular_loss, path = fastdtw(y_test_numpy, forecast_numpy, dist=euclidean)

@@ -25,7 +25,7 @@ exp_net_params = dict(
     backcast_length = 1200,
     forecast_length = 200,
     batch_size = 128,
-    classes = ['LBBB', 'STD', 'Normal', 'RBBB', 'AF', 'I-AVB', 'STE', 'PAC', 'PVC'],
+    classes = ['RBBB','I-AVB'],
     backcast_multiplier = 6,
     hidden_layer_units=64,
     nb_blocks_per_stack= 8,
@@ -37,7 +37,7 @@ exp_net_params = dict(
 epoch_limit = 25
 
 
-leads_dict_available= True
+leads_dict_available= False
 # leads are provided REAL - 1
 leads_dict = {
     'AF': 2,

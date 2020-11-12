@@ -5,7 +5,7 @@ from scipy.io import loadmat
 from run_12ECG_classifier import load_12ECG_model, run_12ECG_classifier
 import neptune
 from config import leads_dict_available
-from config import leads_dict
+from config import leads_dict, exp_net_params
 from datetime import date
 
 def load_challenge_data(filename):
@@ -78,7 +78,7 @@ if __name__ == '__main__':
     if not os.path.isdir(output_directory):
         os.mkdir(output_directory)
 
-    classes= ['LBBB', 'STD', 'Normal', 'RBBB', 'AF', 'I-AVB', 'STE', 'PAC', 'PVC'] 
+    classes= exp_net_params['classes']
     print(get_classes(input_directory,input_files))
 
     # Load model.

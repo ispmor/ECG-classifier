@@ -8,7 +8,7 @@ from config import leads_dict
 
 
 class Model:
-    def __init__(self, device=torch.device('cpu'), counter=90):
+    def __init__(self, device=torch.device('cpu'), counter=900):
         self.forecast_length = default_net_params["forecast_length"]
         self.backcast_length = default_net_params["backcast_length"]
         self.batch_size =  default_net_params["batch_size"]
