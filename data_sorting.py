@@ -124,7 +124,7 @@ def get_classes_test_split(classes_array):
             dataset = dataset + [(data_dir + folder_name + "/" + f[:-4], f[:-4]) for f in files if ".mat" not in f]
             
     np.random.shuffle(dataset)
-    train_size = int(len(dataset) * 0.6)
+    train_size = int(len(dataset) * 0.8)
     test_dataset = dataset[train_size:]
     print(test_dataset)
     print(f"dataset len: {len(dataset)}, test_dataset len: {len(test_dataset)}" )
@@ -140,4 +140,4 @@ if __name__ == "__main__":
     #move_clean_test_signals()
     #sort_signals("/home/puszkar/ecg/data/")
     #get_clean_diagnosis_train_test_split()
-    get_classes_test_split(["RBBB", "I-AVB"])
+    get_classes_test_split(['LBBB', 'Normal', 'RBBB', 'AF', 'STE', 'PAC', 'PVC'])

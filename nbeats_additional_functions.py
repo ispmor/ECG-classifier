@@ -9,8 +9,27 @@ from datetime import date
 import config
 from scipy import stats
 from torch.nn import functional as F
+from torch.nn import SmoothL1Loss
 from scipy.spatial.distance import euclidean
 from fastdtw import fastdtw
+from MSLELoss import MSLELoss
+
+
+def log_cosh_loss(y_pred, y_true):
+    x = y_true - y_pred
+    return np.sum(np.log(np.cosh(x))) / len(x)
+
+def huber_loss(y_pred, y_true):
+    criterion = SmoothL1Loss()
+    return criterion(y_pred, y_true).item()
+
+def msle_loss(y_pred, y_true):
+    criterion = MSLELoss()
+    return criterion(y_pred, y_true).item()
+
+def fastdtw_loss(y_pred, y_true):
+    singular_loss, path = fastdtw(y_pred, y_true, dist=euclidean)
+    return singular_loss
 
 today = date.today().strftime("%d%m%Y")
 def plot_scatter(*args, **kwargs):
@@ -45,7 +64,7 @@ def batcher(dataset, batch_size, infinite=False):
 
 def load(checkpoint_name, model, optimiser):
     if os.path.exists(checkpoint_name):
-        checkpoint = torch.load(checkpoint_name, map_location=torch.device('cuda:1'))
+        checkpoint = torch.load(checkpoint_name, map_location=torch.device('cuda:0'))
         model.load_state_dict(checkpoint['model_state_dict'])
         model.cuda()
         optimiser.load_state_dict(checkpoint['optimiser_state_dict'])
@@ -201,17 +220,33 @@ def get_avg_score(net, x_test, y_test, name, experiment, plot_counter=0, plot_ti
     forecast_length = config.default_net_params["forecast_length"]
     net.eval()
     _, forecast = net(x_test.clone().detach())
-    singular_loss = F.mse_loss(forecast, y_test.clone().detach()).item()
+    singular_loss = 99999
+   
     
     y_test_numpy = np.nan_to_num(y_test.clone().detach().cpu().numpy())
     forecast_numpy = np.nan_to_num(forecast.clone().detach().cpu().numpy())
-    '''
-    y_test_1d = np.append(y_test_numpy[0], [x[-1] for x in y_test_numpy])
-    forecast_1d = np.append(forecast_numpy[0], [x[-1] for x in forecast_numpy])
-    singular_loss, path = fastdtw(y_test_numpy, forecast_numpy, dist=euclidean)
-    experiment.log_metric(f'dtw-distance-{name}', singular_loss)
-    '''
-    experiment.log_metric(f'mse-loss-distance-{name}', singular_loss)
+
+    
+    if config.criterion == "HUBER":
+        singular_loss = huber_loss(forecast, y_test.clone().detach())
+        experiment.log_metric(f'HUBERLoss-{name}', singular_loss)
+    elif config.criterion == "MSE":
+        singular_loss = F.mse_loss(forecast, y_test.clone().detach()).item()
+        experiment.log_metric(f'mse-loss-distance-{name}', singular_loss)
+    elif config.criterion == "LOGCOSH":
+        singular_loss = log_cosh_loss(forecast_numpy, y_test_numpy)
+        experiment.log_metric(f'LOGCOSHLoss-{name}', singular_loss)
+    elif config.criterion == "MSLE":
+        singular_loss = msle_loss(forecast, y_test.clone().detach())
+        experiment.log_metric(f'MSLELoss-{name}', singular_loss)
+    elif config.criterion == "FASTDTW":
+        y_test_1d = np.append(y_test_numpy[0], [x[-1] for x in y_test_numpy])
+        forecast_1d = np.append(forecast_numpy[0], [x[-1] for x in forecast_numpy])
+        singular_loss = fastdtw_loss(forecast_numpy, y_test_numpy)
+        experiment.log_metric(f'dtw-distance-{name}', singular_loss)
+    
+    
+    
     
     if plot_counter > 0:
         if not os.path.exists(f"/home/puszkar/ecg/results/images/{today}v1"):

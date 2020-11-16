@@ -4,8 +4,7 @@ import numpy as np, os, sys
 from scipy.io import loadmat
 from run_12ECG_classifier import load_12ECG_model, run_12ECG_classifier
 import neptune
-from config import leads_dict_available
-from config import leads_dict, exp_net_params
+from config import leads_dict_available, criterion, leads_dict, exp_net_params
 from datetime import date
 
 def load_challenge_data(filename):
@@ -90,7 +89,7 @@ if __name__ == '__main__':
     num_files = len(input_files)
     
     neptune.init('puszkarb/ecg-dyplom')
-    experiment = neptune.create_experiment(name='Classification-' + f'date:{date.today()}')
+    experiment = neptune.create_experiment(name=f'loss:{criterion}-cl:{len(classes)}-{date.today()}')
 
     for i, f in enumerate(input_files):
         print('    {}/{}...'.format(i+1, num_files))
