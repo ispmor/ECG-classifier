@@ -36,7 +36,7 @@ exp_net_params = dict(
     backcast_length = 1200,
     forecast_length = 200,
     batch_size = 32,
-    classes = ['LBBB', 'Normal', 'RBBB', 'AF', 'STE', 'PAC', 'PVC'],
+    classes =  ['LBBB', 'STD', 'Normal', 'RBBB', 'AF', 'I-AVB', 'STE', 'PAC', 'PVC'],
     backcast_multiplier = 6,
     hidden_layer_units=32,
     nb_blocks_per_stack= 32,
@@ -47,9 +47,9 @@ exp_net_params = dict(
 
 epoch_limit = 25
 
-criterion="MSLE" #"HUBER" / "MSLE" / "LOGCOSH" / "MSE" / "FASTDTW"
+criterion="MSE" #"HUBER" / "MSLE" / "LOGCOSH" / "MSE" / "FASTDTW"
 
-leads_dict_available= True
+leads_dict_available= False
 # leads are provided REAL - 1
 leads_dict = {
     'AF': 2,

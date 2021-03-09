@@ -88,11 +88,11 @@ def evaluate_12ECG_score(label_directory, output_directory):
         single_probabilities_output = np.array(tmp_data[3].split(','),np.float64)
 
         # Check labels and output for errors.
-        if not (len(classes_label) == len(classes_output)):
-            raise Exception('Numbers of classes for a file must be the same.')
+        #if not (len(classes_label) == len(classes_output)):
+            #raise Exception('Numbers of classes for a file must be the same.')
         
-        if not (len(single_recording_labels) == len(single_recording_output) == len(single_probabilities_output)):
-            raise Exception('Numbers of labels and output for a file must be the same.')
+        #if not (len(single_recording_labels) == len(single_recording_output) == len(single_probabilities_output)):
+         #   raise Exception('Numbers of labels and output for a file must be the same.')
 
         labels.append(single_recording_labels)
         output.append(single_recording_output)

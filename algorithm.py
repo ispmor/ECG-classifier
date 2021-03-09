@@ -21,6 +21,7 @@ class Model:
         self.scores = {}
         self.scores_norm = {}
         self.scores_final = {}
+        self.scores_final_sorted={}
         self.plots_counter = counter
         self.checkpoint_name_BASE = "nbeats_checkpoint"
 
@@ -76,10 +77,23 @@ class Model:
         result = {}
         for c in self.classes:
             self.scores_norm[c] = (self.scores[c] - min_score) / (max_score - min_score)
-            self.scores_final[c] = 1 - self.scores_norm[c]
+            self.scores_final[c] = 1 - self.scores_norm[c]            
             result[c] = 0
-            if self.scores_final[c] == 1:
-                result[c] = 1
+        
+        counter = 0
+        self.scores_final_sorted = {k: v for k, v in sorted(self.scores_final.items(), key=lambda item: item[1], reverse=True)}
+        
+        for cl, value in self.scores_final_sorted.items():
+            if counter < 3:
+                result[cl] = 1 
+                counter += 1
+            else:
+                counter = 0
+                break
+            
+            
+            #if self.scores_final[c] == 1:
+                #result[c] = 1
         print(self.scores_norm)
         print(self.scores_final)
 

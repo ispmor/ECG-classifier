@@ -140,4 +140,4 @@ if __name__ == "__main__":
     #move_clean_test_signals()
     #sort_signals("/home/puszkar/ecg/data/")
     #get_clean_diagnosis_train_test_split()
-    get_classes_test_split(['LBBB', 'Normal', 'RBBB', 'AF', 'STE', 'PAC', 'PVC'])
+    get_classes_test_split(['LBBB', 'Normal', 'RBBB', 'AF', 'PAC', 'PVC'])

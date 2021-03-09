@@ -69,11 +69,11 @@ plot_eval = False
 
 # Bart
 
-cuda1 = torch.cuda.set_device(1)
+cuda1 = torch.cuda.set_device(0)
 device = torch.device('cuda:0') if torch.cuda.is_available() else torch.device('cpu')
 torch.set_default_tensor_type('torch.cuda.FloatTensor')
 print(device)
-print("Selected device: %s" % (torch.cuda.get_device_name(1)))
+print("Selected device: %s" % (torch.cuda.get_device_name(0)))
 torch.pin_memory=False
 
 print("Considered classes: %s" % (dirs))
